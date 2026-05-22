@@ -4,4 +4,4 @@
 // ============================================================
 
 const SUPABASE_URL = 'wjssgqcybqapttjstbpi';
-const SUPABASE_KEY = 'us-west-1';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indqc3NncWN5YnFhcHR0anN0YnBpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk0NzY3NjEsImV4cCI6MjA5NTA1Mjc2MX0.Not_Ppt9XwWmvvSeqaiUbKB__q2Vq8pF01XWRme-Kjg';
