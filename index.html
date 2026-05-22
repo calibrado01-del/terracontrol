@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="TerraControl">
+  <link rel="manifest" href="manifest.json">
+  <title>TerraControl — Terra Forte Construtora</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">
+      <div class="logo-box"><i class="ti ti-building-factory-2"></i></div>
+    </div>
+    <div class="login-title">TerraControl</div>
+    <div class="login-sub">Terra Forte Construtora</div>
+    <div class="login-field"><label>E-mail</label><input id="l-email" type="email" placeholder="seu@email.com"></div>
+    <div class="login-field"><label>Senha</label><input id="l-senha" type="password" placeholder="••••••••"></div>
+    <div id="login-error" class="login-error"></div>
+    <button class="login-btn" onclick="fazerLogin()">Entrar</button>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app" style="display:none">
+
+  <!-- DESKTOP -->
+  <div class="desk-shell">
+    <div class="desk-hdr">
+      <div class="logo-box"><i class="ti ti-building-factory-2"></i></div>
+      <div>
+        <div class="hdr-name">TerraControl</div>
+        <div class="hdr-sub">Terra Forte Construtora · Ponta Porã–MS</div>
+      </div>
+      <div class="hdr-badge"><i class="ti ti-building"></i> Gestão de Obras</div>
+      <button class="logout-btn" onclick="fazerLogout()" title="Sair"><i class="ti ti-logout"></i></button>
+    </div>
+    <nav class="desk-nav">
+      <button class="desk-nav-btn active" onclick="dShowSec('d-dashboard')"><i class="ti ti-layout-dashboard"></i>Painel</button>
+      <button class="desk-nav-btn" onclick="dShowSec('d-obras')"><i class="ti ti-building"></i>Obras</button>
+      <button class="desk-nav-btn" onclick="dShowSec('d-gastos')"><i class="ti ti-receipt"></i>Gastos</button>
+      <button class="desk-nav-btn" onclick="dShowSec('d-forns')"><i class="ti ti-users"></i>Fornecedores</button>
+      <button class="desk-nav-btn" onclick="dShowSec('d-rel')"><i class="ti ti-chart-bar"></i>Relatórios</button>
+    </nav>
+
+    <div id="d-dashboard" class="sec active">
+      <div id="d-dash-metrics" class="metrics"></div>
+      <div class="card"><div class="card-title">Gastos por categoria</div><div class="chart-wrap" style="height:200px"><canvas id="d-chartCat"></canvas></div></div>
+      <div class="card"><div class="card-title">Gasto por obra</div><div class="chart-wrap" style="height:200px"><canvas id="d-chartObra"></canvas></div></div>
+      <div class="card"><div class="card-title">Últimos lançamentos</div><div id="d-recentes"></div></div>
+    </div>
+
+    <div id="d-obras" class="sec">
+      <div class="sec-hdr"><span class="sec-title">Obras cadastradas</span><button class="btn-p" onclick="openModal('m-obra')"><i class="ti ti-plus"></i>Nova obra</button></div>
+      <div id="d-obras-list"></div>
+    </div>
+
+    <div id="d-gastos" class="sec">
+      <div class="sec-hdr"><span class="sec-title">Lançamentos</span><button class="btn-p" onclick="openModal('m-gasto')"><i class="ti ti-plus"></i>Novo gasto</button></div>
+      <div class="desk-fbar">
+        <select id="d-f-obra" onchange="renderDGastos()"><option value="">Todas as obras</option></select>
+        <select id="d-f-cat" onchange="renderDGastos()"><option value="">Todas as categorias</option><option>Materiais</option><option>Mão de obra</option><option>Equipamento</option><option>Transporte</option><option>Serviços</option></select>
+        <select id="d-f-tipo" onchange="renderDGastos()"><option value="">MO + Material</option><option value="mat">Só materiais</option><option value="mo">Só mão de obra</option></select>
+        <select id="d-f-mes" onchange="renderDGastos()"><option value="">Todos os meses</option></select>
+      </div>
+      <div class="card"><div id="d-gastos-list" class="gl"></div></div>
+      <div id="d-gastos-total" class="total-bar"></div>
+    </div>
+
+    <div id="d-forns" class="sec">
+      <div class="sec-hdr"><span class="sec-title">Fornecedores</span><button class="btn-p" onclick="openModal('m-forn')"><i class="ti ti-plus"></i>Novo fornecedor</button></div>
+      <div id="d-forns-list"></div>
+    </div>
+
+    <div id="d-rel" class="sec">
+      <div class="stabs">
+        <button class="stab active" onclick="dShowStab('dr-obra')">Por obra</button>
+        <button class="stab" onclick="dShowStab('dr-forn')">Por fornecedor</button>
+        <button class="stab" onclick="dShowStab('dr-per')">Por período</button>
+        <button class="stab" onclick="dShowStab('dr-mo')">MO vs Materiais</button>
+      </div>
+      <div id="dr-obra" class="ssec"><div class="ffull"><label>Selecionar obra</label><select id="d-rel-obra" onchange="renderRelObra()"><option value="">Selecione...</option></select></div><div id="d-rel-obra-c"></div></div>
+      <div id="dr-forn" class="ssec"><div class="frow"><div><label>Fornecedor</label><select id="d-rel-forn" onchange="renderRelForn()"><option value="">Todos</option></select></div><div><label>Obra</label><select id="d-rel-forn-obra" onchange="renderRelForn()"><option value="">Todas</option></select></div></div><div id="d-rel-forn-c"></div></div>
+      <div id="dr-per" class="ssec"><div class="frow"><div><label>Mês</label><select id="d-rel-mes" onchange="renderRelPer()"><option value="">Todos</option></select></div><div><label>Obra</label><select id="d-rel-per-obra" onchange="renderRelPer()"><option value="">Todas</option></select></div></div><div id="d-rel-per-c"></div></div>
+      <div id="dr-mo" class="ssec"><div class="ffull"><label>Obra</label><select id="d-rel-mo-obra" onchange="renderRelMO()"><option value="">Todas as obras</option></select></div><div id="d-rel-mo-c"></div></div>
+    </div>
+  </div>
+
+  <!-- MOBILE -->
+  <div class="mob-shell">
+    <div class="mob-hdr">
+      <div class="mob-logo"><i class="ti ti-building-factory-2"></i></div>
+      <div><div class="mob-hdr-text">TerraControl</div><div class="mob-hdr-sub">Terra Forte · Ponta Porã</div></div>
+      <button class="mob-logout" onclick="fazerLogout()"><i class="ti ti-logout"></i></button>
+    </div>
+    <div class="mob-content">
+      <div id="m-dashboard" class="mob-sec active">
+        <div id="m-dash-metrics" class="mob-metric-row"></div>
+        <div class="card"><div class="card-title">Categorias</div><div class="chart-wrap" style="height:180px"><canvas id="m-chartCat"></canvas></div></div>
+        <div class="card"><div class="card-title">Por obra</div><div class="chart-wrap" style="height:180px"><canvas id="m-chartObra"></canvas></div></div>
+        <div class="card"><div class="card-title">Últimos lançamentos</div><div id="m-recentes"></div></div>
+      </div>
+      <div id="m-obras" class="mob-sec"><div id="m-obras-list"></div></div>
+      <div id="m-gastos" class="mob-sec">
+        <div class="mob-filter-row" id="m-filter-row"></div>
+        <div class="card"><div id="m-gastos-list" style="max-height:420px;overflow-y:auto"></div></div>
+        <div id="m-gastos-total" class="total-bar"></div>
+      </div>
+      <div id="m-forns" class="mob-sec"><div id="m-forns-list"></div></div>
+      <div id="m-rel" class="mob-sec">
+        <div class="mob-filter-row">
+          <span class="mob-chip active" onclick="mShowRel('mr-obra',this)">Por obra</span>
+          <span class="mob-chip" onclick="mShowRel('mr-forn',this)">Fornecedor</span>
+          <span class="mob-chip" onclick="mShowRel('mr-per',this)">Período</span>
+          <span class="mob-chip" onclick="mShowRel('mr-mo',this)">MO vs Mat.</span>
+        </div>
+        <div id="mr-obra"><div class="mob-field"><label>Obra</label><select id="m-rel-obra" onchange="renderMRelObra()"><option value="">Selecione...</option></select></div><div id="m-rel-obra-c"></div></div>
+        <div id="mr-forn" style="display:none"><div class="mob-field"><label>Fornecedor</label><select id="m-rel-forn" onchange="renderMRelForn()"><option value="">Todos</option></select></div><div id="m-rel-forn-c"></div></div>
+        <div id="mr-per" style="display:none"><div class="mob-field"><label>Mês</label><select id="m-rel-mes" onchange="renderMRelPer()"><option value="">Todos</option></select></div><div id="m-rel-per-c"></div></div>
+        <div id="mr-mo" style="display:none"><div class="mob-field"><label>Obra</label><select id="m-rel-mo-obra" onchange="renderMRelMO()"><option value="">Todas</option></select></div><div id="m-rel-mo-c"></div></div>
+      </div>
+    </div>
+    <button class="mob-fab" onclick="openModal('m-gasto')"><i class="ti ti-plus"></i></button>
+    <nav class="mob-bottomnav">
+      <button class="mob-nav-btn active" onclick="mShowSec('m-dashboard',this)"><i class="ti ti-layout-dashboard"></i>Painel</button>
+      <button class="mob-nav-btn" onclick="mShowSec('m-obras',this)"><i class="ti ti-building"></i>Obras</button>
+      <button class="mob-nav-btn" onclick="mShowSec('m-gastos',this)"><i class="ti ti-receipt"></i>Gastos</button>
+      <button class="mob-nav-btn" onclick="mShowSec('m-forns',this)"><i class="ti ti-users"></i>Fornecs.</button>
+      <button class="mob-nav-btn" onclick="mShowSec('m-rel',this)"><i class="ti ti-chart-bar"></i>Relatórios</button>
+    </nav>
+  </div>
+
+</div><!-- /app -->
+
+<!-- MODALS -->
+<div id="m-obra" class="mob-modal-bg" role="dialog" aria-modal="true">
+  <div class="mob-modal">
+    <div class="mob-modal-pill"></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+      <div class="mob-modal-title" id="m-obra-title">Cadastrar obra</div>
+      <button class="btn-del" onclick="closeModal('m-obra')"><i class="ti ti-x" style="font-size:18px"></i></button>
+    </div>
+    <div class="mob-field"><label>Nome da obra *</label><input id="o-nome" type="text" placeholder="Ex: Residencial dos Santos"></div>
+    <div class="frow">
+      <div class="mob-field" style="margin-bottom:0"><label>Proprietário(s) *</label><input id="o-prop" type="text" placeholder="Nome do cliente"></div>
+      <div class="mob-field" style="margin-bottom:0"><label>Local</label><input id="o-local" type="text" placeholder="Endereço"></div>
+    </div>
+    <div style="margin-bottom:10px"></div>
+    <div class="frow">
+      <div class="mob-field" style="margin-bottom:0"><label>Orçamento (R$)</label><input id="o-orc" type="number" min="0" step="0.01" placeholder="0,00"></div>
+      <div class="mob-field" style="margin-bottom:0"><label>Status</label><select id="o-status"><option>Em andamento</option><option>Planejamento</option><option>Concluída</option><option>Pausada</option></select></div>
+    </div>
+    <div style="margin-bottom:10px"></div>
+    <div class="frow">
+      <div class="mob-field" style="margin-bottom:0"><label>Início</label><input id="o-ini" type="date"></div>
+      <div class="mob-field" style="margin-bottom:0"><label>Fim previsto</label><input id="o-fim" type="date"></div>
+    </div>
+    <div style="margin-bottom:10px"></div>
+    <div class="mob-field"><label>Observações</label><textarea id="o-obs" placeholder="Detalhes..."></textarea></div>
+    <button class="mob-btn-p" onclick="salvarObra()"><i class="ti ti-check"></i> Salvar obra</button>
+    <button class="mob-btn-s" onclick="closeModal('m-obra')">Cancelar</button>
+  </div>
+</div>
+
+<div id="m-forn" class="mob-modal-bg" role="dialog" aria-modal="true">
+  <div class="mob-modal">
+    <div class="mob-modal-pill"></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+      <div class="mob-modal-title" id="m-forn-title">Cadastrar fornecedor</div>
+      <button class="btn-del" onclick="closeModal('m-forn')"><i class="ti ti-x" style="font-size:18px"></i></button>
+    </div>
+    <div class="mob-field"><label>Nome *</label><input id="f-nome" type="text" placeholder="Ex: Beira Rio Materiais"></div>
+    <div class="frow">
+      <div class="mob-field" style="margin-bottom:0"><label>Tipo</label><select id="f-tipo-c"><option>Materiais</option><option>Mão de obra</option><option>Equipamento</option><option>Transporte</option><option>Serviços</option><option>Diversos</option></select></div>
+      <div class="mob-field" style="margin-bottom:0"><label>Telefone</label><input id="f-tel" type="tel" placeholder="(67) 99999-9999"></div>
+    </div>
+    <div style="margin-bottom:10px"></div>
+    <div class="mob-field"><label>Observações</label><textarea id="f-obs" placeholder="Prazo pagamento, contato..."></textarea></div>
+    <button class="mob-btn-p" onclick="salvarForn()"><i class="ti ti-check"></i> Salvar</button>
+    <button class="mob-btn-s" onclick="closeModal('m-forn')">Cancelar</button>
+  </div>
+</div>
+
+<div id="m-gasto" class="mob-modal-bg" role="dialog" aria-modal="true">
+  <div class="mob-modal">
+    <div class="mob-modal-pill"></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+      <div class="mob-modal-title">Registrar gasto</div>
+      <button class="btn-del" onclick="closeModal('m-gasto')"><i class="ti ti-x" style="font-size:18px"></i></button>
+    </div>
+    <div class="frow">
+      <div class="mob-field" style="margin-bottom:0"><label>Obra *</label><select id="g-obra"><option value="">Selecione</option></select></div>
+      <div class="mob-field" style="margin-bottom:0"><label>Categoria *</label><select id="g-cat"><option value="">Selecione</option><option>Materiais</option><option>Mão de obra</option><option>Equipamento</option><option>Transporte</option><option>Serviços</option></select></div>
+    </div>
+    <div style="margin-bottom:10px"></div>
+    <div class="mob-field">
+      <label>Fornecedor / Credor</label>
+      <div class="ac-wrap">
+        <input id="g-forn" type="text" placeholder="Digite ou selecione..." autocomplete="off" oninput="acInput(this)" onblur="acBlur()" onfocus="acInput(this)">
+        <div id="ac-list" class="ac-list"></div>
+      </div>
+    </div>
+    <div class="frow">
+      <div class="mob-field" style="margin-bottom:0"><label>Valor (R$) *</label><input id="g-valor" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0,00"></div>
+      <div class="mob-field" style="margin-bottom:0"><label>Data *</label><input id="g-data" type="date"></div>
+    </div>
+    <div style="margin-bottom:10px"></div>
+    <div class="mob-field"><label>Forma de pagamento</label><select id="g-pag"><option>PIX</option><option>Dinheiro</option><option>Boleto</option><option>Cartão</option><option>Transferência</option></select></div>
+    <div class="mob-field"><label>Descrição / Observação</label><textarea id="g-desc" placeholder="Ex: 10 sacos cimento CP-II..."></textarea></div>
+    <div class="mob-field"><label>NF / Comprovante</label><input id="g-nf" type="text" placeholder="NF 1234"></div>
+    <button class="mob-btn-p" onclick="salvarGasto()"><i class="ti ti-check"></i> Salvar gasto</button>
+    <button class="mob-btn-s" onclick="closeModal('m-gasto')">Cancelar</button>
+  </div>
+</div>
+
+<!-- Loading overlay -->
+<div id="loading" style="display:none;position:fixed;inset:0;background:rgba(255,255,255,.8);z-index:999;display:flex;align-items:center;justify-content:center;font-size:14px;color:#8B4513"><i class="ti ti-loader" style="font-size:28px;margin-right:8px;animation:spin 1s linear infinite"></i>Carregando...</div>
+<style>@keyframes spin{to{transform:rotate(360deg)}}</style>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="config.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
