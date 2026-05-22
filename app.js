@@ -46,8 +46,20 @@ async function iniciarApp() {
   document.getElementById('g-data').value = hoje();
 }
 
+// Esconde loading e mostra login se não houver sessão em 3 segundos
+setTimeout(() => {
+  const loading = document.getElementById('loading');
+  if (loading) loading.style.display = 'none';
+}, 3000);
+
 db.auth.onAuthStateChange((event, session) => {
-  if (session) { userId = session.user.id; iniciarApp(); }
+  if (session) {
+    userId = session.user.id;
+    iniciarApp();
+  } else {
+    const loading = document.getElementById('loading');
+    if (loading) loading.style.display = 'none';
+  }
 });
 
 // ── SUPABASE CRUD ─────────────────────────────────────────
