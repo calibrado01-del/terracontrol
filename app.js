@@ -152,7 +152,8 @@ function mSetFiltro(key,val) {
 
 // ── MODALS ────────────────────────────────────────────────
 function openModal(id) {
-  if(id==='m-gasto'){ popSelects(); document.getElementById('g-data').value=hoje(); }
+  popSelects(); popMeses();
+  if(id==='m-gasto') document.getElementById('g-data').value=hoje();
   document.getElementById(id).classList.add('open');
   document.body.style.overflow='hidden';
 }
