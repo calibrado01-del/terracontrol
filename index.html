@@ -148,23 +148,49 @@
       <div class="mob-modal-title" id="m-obra-title">Cadastrar obra</div>
       <button class="btn-del" onclick="closeModal('m-obra')"><i class="ti ti-x" style="font-size:18px"></i></button>
     </div>
-    <div class="mob-field"><label>Nome da obra *</label><input id="o-nome" type="text" placeholder="Ex: Residencial dos Santos"></div>
-    <div class="frow">
-      <div class="mob-field" style="margin-bottom:0"><label>Proprietário(s) *</label><input id="o-prop" type="text" placeholder="Nome do cliente"></div>
-      <div class="mob-field" style="margin-bottom:0"><label>Local</label><input id="o-local" type="text" placeholder="Endereço"></div>
+    <div class="obra-tabs">
+      <button class="obra-tab active" onclick="obraTab('dados')">Dados da obra</button>
+      <button class="obra-tab" onclick="obraTab('financeiro')">Financeiro</button>
     </div>
-    <div style="margin-bottom:10px"></div>
-    <div class="frow">
-      <div class="mob-field" style="margin-bottom:0"><label>Orçamento (R$)</label><input id="o-orc" type="number" min="0" step="0.01" placeholder="0,00"></div>
-      <div class="mob-field" style="margin-bottom:0"><label>Status</label><select id="o-status"><option>Em andamento</option><option>Planejamento</option><option>Concluída</option><option>Pausada</option></select></div>
+
+    <div id="ot-dados">
+      <div class="mob-field"><label>Nome da obra *</label><input id="o-nome" type="text" placeholder="Ex: Residencial dos Santos"></div>
+      <div class="frow">
+        <div class="mob-field" style="margin-bottom:0"><label>Proprietário(s) *</label><input id="o-prop" type="text" placeholder="Nome do cliente"></div>
+        <div class="mob-field" style="margin-bottom:0"><label>Local</label><input id="o-local" type="text" placeholder="Endereço"></div>
+      </div>
+      <div style="margin-bottom:10px"></div>
+      <div class="frow">
+        <div class="mob-field" style="margin-bottom:0"><label>Orçamento (R$)</label><input id="o-orc" type="number" min="0" step="0.01" placeholder="0,00"></div>
+        <div class="mob-field" style="margin-bottom:0"><label>Status</label><select id="o-status"><option>Em andamento</option><option>Planejamento</option><option>Concluída</option><option>Pausada</option></select></div>
+      </div>
+      <div style="margin-bottom:10px"></div>
+      <div class="frow">
+        <div class="mob-field" style="margin-bottom:0"><label>Início</label><input id="o-ini" type="date"></div>
+        <div class="mob-field" style="margin-bottom:0"><label>Fim previsto</label><input id="o-fim" type="date"></div>
+      </div>
+      <div style="margin-bottom:10px"></div>
+      <div class="mob-field"><label>Observações</label><textarea id="o-obs" placeholder="Detalhes..."></textarea></div>
     </div>
-    <div style="margin-bottom:10px"></div>
-    <div class="frow">
-      <div class="mob-field" style="margin-bottom:0"><label>Início</label><input id="o-ini" type="date"></div>
-      <div class="mob-field" style="margin-bottom:0"><label>Fim previsto</label><input id="o-fim" type="date"></div>
+
+    <div id="ot-financeiro" style="display:none">
+      <div id="entradas-lista" style="margin-bottom:12px"></div>
+      <div style="background:var(--color-background-secondary,#f5f4f1);border-radius:10px;padding:12px;margin-bottom:12px">
+        <div style="font-size:13px;font-weight:500;color:#8B4513;margin-bottom:10px">+ Nova parcela</div>
+        <div class="frow">
+          <div class="mob-field" style="margin-bottom:0"><label>Valor (R$) *</label><input id="e-valor" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0,00"></div>
+          <div class="mob-field" style="margin-bottom:0"><label>Data prevista</label><input id="e-data" type="date"></div>
+        </div>
+        <div style="margin-bottom:10px"></div>
+        <div class="frow">
+          <div class="mob-field" style="margin-bottom:0"><label>Forma</label><select id="e-forma"><option>PIX</option><option>Boleto</option><option>Cheque</option><option>Transferência</option><option>Dinheiro</option></select></div>
+          <div class="mob-field" style="margin-bottom:0"><label>Referência</label><input id="e-ref" type="text" placeholder="Ex: 25% estrutura"></div>
+        </div>
+        <div style="margin-bottom:10px"></div>
+        <button class="mob-btn-p" style="margin-bottom:0" onclick="addEntradaTemp()"><i class="ti ti-plus"></i> Adicionar parcela</button>
+      </div>
     </div>
-    <div style="margin-bottom:10px"></div>
-    <div class="mob-field"><label>Observações</label><textarea id="o-obs" placeholder="Detalhes..."></textarea></div>
+
     <button class="mob-btn-p" onclick="salvarObra()"><i class="ti ti-check"></i> Salvar obra</button>
     <button class="mob-btn-s" onclick="closeModal('m-obra')">Cancelar</button>
   </div>
