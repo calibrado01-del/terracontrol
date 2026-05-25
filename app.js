@@ -234,13 +234,16 @@ async function salvarObra() {
   if(!nome||!prop){alert('Preencha nome e proprietário.');return}
   setLoading(true);
   const obj={nome,proprietario:prop,local:document.getElementById('o-local').value.trim(),orcamento:parseFloat(document.getElementById('o-orc').value)||0,status:document.getElementById('o-status').value,inicio:document.getElementById('o-ini').value||null,fim:document.getElementById('o-fim').value||null,obs:document.getElementById('o-obs').value.trim()};
+  const obraIdParaEntradas = editObraId;
   if(editObraId){
     await atualizarObra(editObraId,obj);
     const i=obras.findIndex(o=>o.id===editObraId); if(i>-1)obras[i]={...obras[i],...obj};
   } else {
     const nova=await inserirObra(obj); if(nova)obras.push(nova);
   }
+  if (!obraIdParaEntradas && novo) await salvarEntradasObra(novo.id);
   setLoading(false); closeModal('m-obra'); popSelects();
+entradasTemp = [];
   renderDObras(); renderMObras();
   if(isMobile())renderMDash(); else renderDDash();
 }
@@ -350,7 +353,7 @@ function renderDObras() {
   if(!obras.length){el.innerHTML='<div class="empty"><i class="ti ti-building-off"></i>Nenhuma obra cadastrada.</div>';return}
   el.innerHTML=obras.map(o=>{
     const go=gastos.filter(g=>g.obra_id===o.id),gt=tot(go),perc=o.orcamento>0?Math.min(100,Math.round(gt/o.orcamento*100)):0;
-    return`<div class="card" style="margin-bottom:10px;padding:.875rem 1.25rem"><div class="card-hdr"><div><div style="font-size:15px;font-weight:500">${o.nome}</div><div style="font-size:13px;color:#888;margin-top:2px">${o.proprietario||''}${o.local?' · '+o.local:''}</div></div><div style="display:flex;gap:6px;align-items:center"><span class="badge ${ST_B[o.status]||'b-gray'}">${o.status}</span><button class="btn-ic" onclick="editObra('${o.id}')"><i class="ti ti-pencil"></i></button><button class="btn-ic" onclick="delObra('${o.id}')"><i class="ti ti-trash" style="color:#c0392b"></i></button></div></div><div style="display:flex;gap:20px;font-size:13px;flex-wrap:wrap"><span style="color:#888">Gasto: <strong style="color:#1a1a1a">${brl(gt)}</strong></span>${o.orcamento?`<span style="color:#888">Orç.: <strong>${brl(o.orcamento)}</strong></span><span style="color:#888">${perc}% utilizado</span>`:''}<span style="color:#888">${go.length} lançamentos</span></div>${o.orcamento?`<div class="bar-bg"><div class="bar-fill" style="width:${perc}%;background:${perc>90?'#c0392b':'#8B4513'}"></div></div>`:''}</div>`;
+    return`<div class="card" style="margin-bottom:10px;padding:.875rem 1.25rem"><div class="card-hdr"><div><div style="font-size:15px;font-weight:500">${o.nome}</div><div style="font-size:13px;color:#888;margin-top:2px">${o.proprietario||''}${o.local?' · '+o.local:''}</div></div><div style="display:flex;gap:6px;align-items:center"><span class="badge ${ST_B[o.status]||'b-gray'}">${o.status}</span><button class="btn-ic" onclick="editObra('${o.id}')"><i class="ti ti-pencil"></i></button><button class="btn-ic" onclick="delObra('${o.id}')"><i class="ti ti-trash" style="color:#c0392b"></i></button></div></div><div style="display:flex;gap:20px;font-size:13px;flex-wrap:wrap"><span style="color:#888">Gasto: <strong style="color:#1a1a1a">${brl(gt)}</strong></span>${o.orcamento?`<span style="color:#888">Orç.: <strong>${brl(o.orcamento)}</strong></span><span style="color:#888">${perc}% utilizado</span>`:''}<span style="color:#888">${go.length} lançamentos</span></div>${o.orcamento?`<div class="bar-bg"><div class="bar-fill" style="width:${perc}%;background:${perc>90?'#c0392b':'#8B4513'}"></div></div>`:''}</div><div id="fin-${o.id}" style="margin-top:10px"></div>`;
   }).join('');
 }
 function renderDGastos() {
@@ -362,7 +365,7 @@ function renderDGastos() {
   if(tf==='mo')list=list.filter(g=>g.categoria==='Mão de obra');
   if(mf)list=list.filter(g=>g.data&&g.data.startsWith(mf));
   const el=document.getElementById('d-gastos-list');
-  el.innerHTML=list.length?list.map(g=>giHTML(g,om)).join(''):'<div class="empty"><i class="ti ti-receipt-off"></i>Nenhum lançamento.</div>';
+  el.innerHTML=list.length?list.map(g=>giHTML(g,om)).join(''):'<div class="empty"><i class="ti ti-receipt-off"></i>Nenhum lançamento.</div>obras.forEach(o => renderFinanceiroObra(o.id));';
   document.getElementById('d-gastos-total').textContent=list.length?`Total filtrado: ${brl(tot(list))} (${list.length} lançamentos)`:'';
 }
 function renderDForns() {
