@@ -452,6 +452,123 @@ function exportCSV(obraId) {
   const obra=obras.find(o=>o.id===obraId),list=gastos.filter(g=>g.obra_id===obraId);
   if(!list.length){alert('Sem gastos para exportar.');return}
   const rows=[['Data','Categoria','Fornecedor','Valor','Pagamento','NF','Descrição'],...list.map(g=>[g.data,g.categoria,g.fornecedor||'',parseFloat(g.valor).toFixed(2).replace('.',','),g.forma_pagamento||'',g.nf||'',(g.descricao||'').replace(/,/g,' ')])];
+  let entradasTemp = [];
+
+function obraTab(tab) {
+  document.querySelectorAll('.obra-tab').forEach(b => b.classList.remove('active'));
+  document.querySelector(`.obra-tab[onclick="obraTab('${tab}')"]`).classList.add('active');
+  document.getElementById('ot-dados').style.display = tab === 'dados' ? 'block' : 'none';
+  document.getElementById('ot-financeiro').style.display = tab === 'financeiro' ? 'block' : 'none';
+  if (tab === 'financeiro') renderEntradasTemp();
+}
+
+function addEntradaTemp() {
+  const valor = parseFloat(document.getElementById('e-valor').value);
+  if (!valor) { alert('Informe o valor da parcela.'); return; }
+  entradasTemp.push({
+    valor,
+    data_prevista: document.getElementById('e-data').value || null,
+    forma_recebimento: document.getElementById('e-forma').value,
+    referencia: document.getElementById('e-ref').value.trim(),
+    recebido: false,
+  });
+  document.getElementById('e-valor').value = '';
+  document.getElementById('e-ref').value = '';
+  renderEntradasTemp();
+}
+
+function renderEntradasTemp() {
+  const el = document.getElementById('entradas-lista');
+  if (!entradasTemp.length) { el.innerHTML = '<div style="text-align:center;padding:1rem;font-size:13px;color:#888">Nenhuma parcela adicionada ainda.</div>'; return; }
+  el.innerHTML = entradasTemp.map((e, i) => `
+    <div class="entrada-item">
+      <div style="flex:1">
+        <div style="font-size:14px;font-weight:500;color:#1a1a1a">${brl(e.valor)}</div>
+        <div style="font-size:12px;color:#888;margin-top:2px">${e.referencia ? e.referencia + ' · ' : ''}${e.forma_recebimento}${e.data_prevista ? ' · ' + dtBR(e.data_prevista) : ''}</div>
+      </div>
+      <button class="btn-del" onclick="entradasTemp.splice(${i},1);renderEntradasTemp()"><i class="ti ti-trash" style="font-size:14px"></i></button>
+    </div>`).join('');
+}
+
+async function carregarEntradas(obraId) {
+  const { data } = await db.from('entradas').select('*').eq('obra_id', obraId).order('data_prevista');
+  return data || [];
+}
+
+async function salvarEntradasObra(obraId) {
+  if (!entradasTemp.length) return;
+  const rows = entradasTemp.map(e => ({ ...e, obra_id: obraId }));
+  await db.from('entradas').insert(rows);
+  entradasTemp = [];
+}
+
+async function toggleEntrada(id, recebido) {
+  const novoStatus = !recebido;
+  const update = { recebido: novoStatus, data_recebimento: novoStatus ? hoje() : null };
+  await db.from('entradas').update(update).eq('id', id);
+  if (currentObraFinanceiroId) renderFinanceiroObra(currentObraFinanceiroId);
+}
+
+async function delEntrada(id) {
+  if (!confirm('Excluir esta parcela?')) return;
+  await db.from('entradas').delete().eq('id', id);
+  if (currentObraFinanceiroId) renderFinanceiroObra(currentObraFinanceiroId);
+}
+
+let currentObraFinanceiroId = null;
+
+async function renderFinanceiroObra(obraId) {
+  currentObraFinanceiroId = obraId;
+  const obra = obras.find(o => o.id === obraId);
+  const entradas = await carregarEntradas(obraId);
+  const gastosList = gastos.filter(g => g.obra_id === obraId);
+  const totalPrevisto = entradas.reduce((a, e) => a + parseFloat(e.valor || 0), 0);
+  const totalRecebido = entradas.filter(e => e.recebido).reduce((a, e) => a + parseFloat(e.valor || 0), 0);
+  const totalGasto = tot(gastosList);
+  const saldo = totalRecebido - totalGasto;
+  const percRecebido = totalPrevisto > 0 ? Math.min(100, Math.round(totalRecebido / totalPrevisto * 100)) : 0;
+
+  const el = document.getElementById('fin-' + obraId);
+  if (!el) return;
+
+  el.innerHTML = `
+    <div class="metrics" style="margin-bottom:1rem">
+      <div class="metric"><div class="metric-label">Total previsto</div><div class="metric-value">${brl(totalPrevisto)}</div></div>
+      <div class="metric"><div class="metric-label">Recebido</div><div class="metric-value mv-green">${brl(totalRecebido)}</div></div>
+      <div class="metric"><div class="metric-label">Gasto</div><div class="metric-value mv-brown">${brl(totalGasto)}</div></div>
+      <div class="metric"><div class="metric-label">Saldo</div><div class="metric-value ${saldo >= 0 ? 'mv-green' : 'mv-red'}">${brl(saldo)}</div></div>
+    </div>
+    <div style="margin-bottom:14px">
+      <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px"><span style="font-weight:500">Progresso de recebimentos</span><span style="color:#888">${percRecebido}%</span></div>
+      <div class="pb-bg"><div class="pb-fill" style="width:${percRecebido}%;background:#2D6A2D"></div></div>
+    </div>
+    <div style="font-size:13px;font-weight:500;color:#888;margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">Parcelas</div>
+    ${entradas.length ? entradas.map(e => `
+      <div class="entrada-item ${e.recebido ? 'recebido' : ''}">
+        <div class="entrada-check ${e.recebido ? 'ok' : ''}" onclick="toggleEntrada('${e.id}',${e.recebido})">
+          ${e.recebido ? '<i class="ti ti-check" style="font-size:12px"></i>' : ''}
+        </div>
+        <div style="flex:1">
+          <div style="font-size:14px;font-weight:500;color:#1a1a1a">${brl(e.valor)}</div>
+          <div style="font-size:12px;color:#888;margin-top:1px">${e.referencia ? e.referencia + ' · ' : ''}${e.forma_recebimento || ''}${e.data_prevista ? ' · ' + dtBR(e.data_prevista) : ''}${e.recebido && e.data_recebimento ? ' · recebido em ' + dtBR(e.data_recebimento) : ''}</div>
+        </div>
+        <button class="btn-del" onclick="delEntrada('${e.id}')"><i class="ti ti-trash" style="font-size:14px"></i></button>
+      </div>`).join('') : '<div style="text-align:center;padding:1rem;font-size:13px;color:#888">Nenhuma parcela cadastrada.</div>'}
+    <div style="margin-top:10px">
+      <button class="btn-s" style="width:100%;font-size:13px" onclick="abrirAddEntrada('${obraId}')"><i class="ti ti-plus" style="font-size:13px;vertical-align:-1px"></i> Adicionar parcela</button>
+    </div>
+  `;
+}
+
+async function abrirAddEntrada(obraId) {
+  const valor = prompt('Valor da parcela (R$):');
+  if (!valor || isNaN(parseFloat(valor))) return;
+  const ref = prompt('Referência (ex: 25% estrutura):') || '';
+  const data = prompt('Data prevista (AAAA-MM-DD):') || null;
+  const forma = prompt('Forma (PIX / Boleto / Cheque / Transferência / Dinheiro):') || 'PIX';
+  await db.from('entradas').insert([{ obra_id: obraId, valor: parseFloat(valor), referencia: ref, data_prevista: data, forma_recebimento: forma, recebido: false }]);
+  renderFinanceiroObra(obraId);
+}
   const blob=new Blob(['\uFEFF'+rows.map(r=>r.join(',')).join('\n')],{type:'text/csv;charset=utf-8'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=(obra?obra.nome:'obra')+'_gastos.csv';a.click();
 }
