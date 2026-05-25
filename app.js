@@ -240,7 +240,8 @@ async function salvarObra() {
     const nova=await inserirObra(obj); if(nova)obras.push(nova);
   }
   setLoading(false); closeModal('m-obra'); popSelects();
-  if(isMobile())renderMObras(); else renderDObras();
+  renderDObras(); renderMObras();
+  if(isMobile())renderMDash(); else renderDDash();
 }
 function editObra(id) {
   const o=obras.find(x=>x.id===id); if(!o)return; editObraId=id;
