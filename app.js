@@ -64,7 +64,11 @@ async function atualizarForn(id,obj) {await db.from('fornecedores').update(obj).
 async function deletarForn(id)       {await db.from('fornecedores').delete().eq('id',id);}
 async function inserirGasto(obj)     {const{data}=await db.from('gastos').insert([obj]).select();return data?.[0];}
 async function deletarGasto(id)      {await db.from('gastos').delete().eq('id',id);}
-async function inserirEntrada(obj)   {const{data}=await db.from('entradas').insert([obj]).select();return data?.[0];}
+async function inserirEntrada(obj) {
+  const{data,error}=await db.from('entradas').insert([obj]).select();
+  if(error){console.error('Erro ao inserir entrada:',error);alert('Erro ao salvar parcela: '+error.message);return null;}
+  return data?.[0];
+}
 async function atualizarEntrada(id,obj){await db.from('entradas').update(obj).eq('id',id);}
 async function deletarEntrada(id)    {await db.from('entradas').delete().eq('id',id);}
 
@@ -308,7 +312,7 @@ async function salvarEntrada(){
     data_recebimento:document.getElementById('en-data-rec').value||null,
     forma_recebimento:document.getElementById('en-forma').value,
     observacao:document.getElementById('en-obs').value.trim(),
-    recebido:valRec>0,
+    recebido: valRec>0||false,
   };
   setLoading(true);
   if(editEntradaId){
