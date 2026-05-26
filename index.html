@@ -149,10 +149,9 @@
       <button class="btn-del" onclick="closeModal('m-obra')"><i class="ti ti-x" style="font-size:18px"></i></button>
     </div>
     <div class="obra-tabs">
-      <button class="obra-tab active" onclick="obraTab('dados')">Dados da obra</button>
-      <button class="obra-tab" onclick="obraTab('financeiro')">Financeiro</button>
+      <button class="obra-tab active" data-tab="dados" onclick="obraTab('dados')">Dados da obra</button>
+      <button class="obra-tab" data-tab="financeiro" onclick="obraTab('financeiro')">Financeiro</button>
     </div>
-
     <div id="ot-dados">
       <div class="mob-field"><label>Nome da obra *</label><input id="o-nome" type="text" placeholder="Ex: Residencial dos Santos"></div>
       <div class="frow">
@@ -172,10 +171,9 @@
       <div style="margin-bottom:10px"></div>
       <div class="mob-field"><label>Observações</label><textarea id="o-obs" placeholder="Detalhes..."></textarea></div>
     </div>
-
     <div id="ot-financeiro" style="display:none">
       <div id="entradas-lista" style="margin-bottom:12px"></div>
-      <div style="background:var(--color-background-secondary,#f5f4f1);border-radius:10px;padding:12px;margin-bottom:12px">
+      <div style="background:#f5f4f1;border-radius:10px;padding:12px;margin-bottom:12px">
         <div style="font-size:13px;font-weight:500;color:#8B4513;margin-bottom:10px">+ Nova parcela</div>
         <div class="frow">
           <div class="mob-field" style="margin-bottom:0"><label>Valor (R$) *</label><input id="e-valor" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0,00"></div>
@@ -190,7 +188,6 @@
         <button class="mob-btn-p" style="margin-bottom:0" onclick="addEntradaTemp()"><i class="ti ti-plus"></i> Adicionar parcela</button>
       </div>
     </div>
-
     <button class="mob-btn-p" onclick="salvarObra()"><i class="ti ti-check"></i> Salvar obra</button>
     <button class="mob-btn-s" onclick="closeModal('m-obra')">Cancelar</button>
   </div>
