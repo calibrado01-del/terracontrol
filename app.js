@@ -12,8 +12,9 @@ const ST_B    = { 'Em andamento':'b-blue','Planejamento':'b-amber','Concluída':
 const MESES   = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
 const PAL     = ['#8B4513','#2D6A2D','#1a6ea0','#b07d00','#7b3fa0','#c0392b'];
 
-let obras=[], gastos=[], forns=[], editObraId=null, editFornId=null, charts={}, mFiltros={obra:''};
+let obras=[], gastos=[], forns=[], entradas=[], editObraId=null, editFornId=null, charts={}, mFiltros={obra:''};
 let userId = null;
+let entradasTemp = [];
 
 // ── AUTH ──────────────────────────────────────────────────
 async function fazerLogin() {
@@ -32,61 +33,57 @@ async function fazerLogout() {
   await db.auth.signOut();
   document.getElementById('app').style.display = 'none';
   document.getElementById('login-screen').style.display = 'flex';
-  obras=[]; gastos=[]; forns=[];
+  obras=[]; gastos=[]; forns=[]; entradas=[];
 }
 
 async function iniciarApp() {
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app').style.display = 'block';
   setLoading(true);
-  await Promise.all([carregarObras(), carregarForns(), carregarGastos()]);
+  await Promise.all([carregarObras(), carregarForns(), carregarGastos(), carregarEntradas()]);
   setLoading(false);
   popSelects(); popMeses();
   if (isMobile()) renderMDash(); else renderDDash();
   document.getElementById('g-data').value = hoje();
 }
 
-// Esconde loading e mostra login se não houver sessão em 3 segundos
-setTimeout(() => {
-  const loading = document.getElementById('loading');
-  if (loading) loading.style.display = 'none';
-}, 3000);
+setTimeout(() => { const l = document.getElementById('loading'); if(l) l.style.display='none'; }, 3000);
 
 db.auth.onAuthStateChange((event, session) => {
-  if (session) {
-    userId = session.user.id;
-    iniciarApp();
-  } else {
-    const loading = document.getElementById('loading');
-    if (loading) loading.style.display = 'none';
-  }
+  if (session) { userId = session.user.id; iniciarApp(); }
+  else { const l = document.getElementById('loading'); if(l) l.style.display='none'; }
 });
 
 // ── SUPABASE CRUD ─────────────────────────────────────────
-async function carregarObras()  { const {data}=await db.from('obras').select('*').order('created_at'); obras=data||[]; }
-async function carregarForns()  { const {data}=await db.from('fornecedores').select('*').order('nome'); forns=data||[]; }
-async function carregarGastos() { const {data}=await db.from('gastos').select('*').order('data',{ascending:false}); gastos=data||[]; }
+async function carregarObras()    { const {data}=await db.from('obras').select('*').order('created_at'); obras=data||[]; }
+async function carregarForns()    { const {data}=await db.from('fornecedores').select('*').order('nome'); forns=data||[]; }
+async function carregarGastos()   { const {data}=await db.from('gastos').select('*').order('data',{ascending:false}); gastos=data||[]; }
+async function carregarEntradas() { const {data}=await db.from('entradas').select('*').order('data_prevista'); entradas=data||[]; }
 
-async function inserirObra(obj)   { const {data}=await db.from('obras').insert([obj]).select(); return data?.[0]; }
+async function inserirObra(obj)      { const {data}=await db.from('obras').insert([obj]).select(); return data?.[0]; }
 async function atualizarObra(id,obj) { await db.from('obras').update(obj).eq('id',id); }
-async function deletarObra(id)    { await db.from('obras').delete().eq('id',id); }
+async function deletarObra(id)       { await db.from('obras').delete().eq('id',id); }
 
-async function inserirForn(obj)   { const {data}=await db.from('fornecedores').insert([obj]).select(); return data?.[0]; }
+async function inserirForn(obj)      { const {data}=await db.from('fornecedores').insert([obj]).select(); return data?.[0]; }
 async function atualizarForn(id,obj) { await db.from('fornecedores').update(obj).eq('id',id); }
-async function deletarForn(id)    { await db.from('fornecedores').delete().eq('id',id); }
+async function deletarForn(id)       { await db.from('fornecedores').delete().eq('id',id); }
 
 async function inserirGasto(obj)  { const {data}=await db.from('gastos').insert([obj]).select(); return data?.[0]; }
 async function deletarGasto(id)   { await db.from('gastos').delete().eq('id',id); }
 
+async function inserirEntrada(obj)      { const {data}=await db.from('entradas').insert([obj]).select(); return data?.[0]; }
+async function atualizarEntrada(id,obj) { await db.from('entradas').update(obj).eq('id',id); }
+async function deletarEntrada(id)       { await db.from('entradas').delete().eq('id',id); }
+
 // ── HELPERS ───────────────────────────────────────────────
-function brl(v)    { return 'R$ '+Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
-function dtBR(d)   { if(!d)return''; const p=d.split('-'); return p[2]+'/'+p[1]+'/'+p[0]; }
+function brl(v)      { return 'R$ '+Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function dtBR(d)     { if(!d)return''; const p=d.split('-'); return p[2]+'/'+p[1]+'/'+p[0]; }
 function mesNome(ym) { const[y,m]=ym.split('-'); return MESES[parseInt(m)-1]+'/'+y; }
-function tot(list) { return list.reduce((a,g)=>a+(parseFloat(g.valor)||0),0); }
+function tot(list)   { return list.reduce((a,g)=>a+(parseFloat(g.valor)||0),0); }
 function initials(n) { return n.split(' ').slice(0,2).map(w=>w[0]||'').join('').toUpperCase(); }
-function oMap()    { const m={}; obras.forEach(o=>m[o.id]=o.nome); return m; }
-function isMobile(){ return window.innerWidth<=640; }
-function hoje()    { return new Date().toISOString().split('T')[0]; }
+function oMap()      { const m={}; obras.forEach(o=>m[o.id]=o.nome); return m; }
+function isMobile()  { return window.innerWidth<=640; }
+function hoje()      { return new Date().toISOString().split('T')[0]; }
 function setLoading(v){ const el=document.getElementById('loading'); if(el)el.style.display=v?'flex':'none'; }
 
 function dChart(id,type,data,opts) {
@@ -154,19 +151,20 @@ function mSetFiltro(key,val) {
 function openModal(id) {
   popSelects(); popMeses();
   if(id==='m-gasto') document.getElementById('g-data').value=hoje();
+  if(id==='m-obra')  { entradasTemp=[]; obraTab('dados'); }
   document.getElementById(id).classList.add('open');
   document.body.style.overflow='hidden';
 }
 function closeModal(id) {
   document.getElementById(id).classList.remove('open');
   document.body.style.overflow='';
-  if(id==='m-obra'){ clearOF(); editObraId=null; }
+  if(id==='m-obra'){ clearOF(); editObraId=null; entradasTemp=[]; }
   if(id==='m-forn'){ clearFF(); editFornId=null; }
   if(id==='m-gasto') clearGF();
 }
-function clearOF(){ ['o-nome','o-prop','o-local','o-obs','o-ini','o-fim'].forEach(i=>{const e=document.getElementById(i);if(e)e.value=''}); const eo=document.getElementById('o-orc');if(eo)eo.value=''; const es=document.getElementById('o-status');if(es)es.value='Em andamento'; const et=document.getElementById('m-obra-title');if(et)et.textContent='Cadastrar obra'; }
-function clearFF(){ ['f-nome','f-tel','f-obs'].forEach(i=>{const e=document.getElementById(i);if(e)e.value=''}); const et=document.getElementById('m-forn-title');if(et)et.textContent='Cadastrar fornecedor'; }
-function clearGF(){ ['g-forn','g-desc','g-nf'].forEach(i=>{const e=document.getElementById(i);if(e)e.value=''}); ['g-valor','g-obra','g-cat'].forEach(i=>{const e=document.getElementById(i);if(e)e.value=''}); }
+function clearOF(){ ['o-nome','o-prop','o-local','o-obs','o-ini','o-fim'].forEach(i=>{const e=document.getElementById(i);if(e)e.value=''});const eo=document.getElementById('o-orc');if(eo)eo.value='';const es=document.getElementById('o-status');if(es)es.value='Em andamento';const et=document.getElementById('m-obra-title');if(et)et.textContent='Cadastrar obra'; }
+function clearFF(){ ['f-nome','f-tel','f-obs'].forEach(i=>{const e=document.getElementById(i);if(e)e.value=''});const et=document.getElementById('m-forn-title');if(et)et.textContent='Cadastrar fornecedor'; }
+function clearGF(){ ['g-forn','g-desc','g-nf'].forEach(i=>{const e=document.getElementById(i);if(e)e.value=''});['g-valor','g-obra','g-cat'].forEach(i=>{const e=document.getElementById(i);if(e)e.value=''}); }
 
 // ── SELECTS / MESES ───────────────────────────────────────
 function popSelects() {
@@ -217,8 +215,7 @@ function acInput(inp) {
     d.innerHTML=`<i class="ti ti-plus" style="font-size:14px"></i>Adicionar "${inp.value}"`;
     d.onmousedown=d.ontouchstart=async()=>{
       const nf={nome:inp.value.trim(),tipo:'Materiais',telefone:'',obs:''};
-      const novo=await inserirForn(nf);
-      if(novo)forns.push(novo);
+      const novo=await inserirForn(nf); if(novo)forns.push(novo);
       list.style.display='none';
     };
     list.appendChild(d);
@@ -227,25 +224,68 @@ function acInput(inp) {
 }
 function acBlur(){ setTimeout(()=>{const l=document.getElementById('ac-list');if(l)l.style.display='none'},250); }
 
+// ── ABA FINANCEIRO NO MODAL DE OBRA ───────────────────────
+function obraTab(tab) {
+  document.querySelectorAll('.obra-tab').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.obra-tab').forEach(b=>{ if(b.dataset.tab===tab) b.classList.add('active'); });
+  document.getElementById('ot-dados').style.display      = tab==='dados'      ? 'block' : 'none';
+  document.getElementById('ot-financeiro').style.display = tab==='financeiro' ? 'block' : 'none';
+  if(tab==='financeiro') renderEntradasTemp();
+}
+
+function addEntradaTemp() {
+  const valor=parseFloat(document.getElementById('e-valor').value);
+  if(!valor){ alert('Informe o valor da parcela.'); return; }
+  entradasTemp.push({
+    valor,
+    data_prevista: document.getElementById('e-data').value||null,
+    forma_recebimento: document.getElementById('e-forma').value,
+    referencia: document.getElementById('e-ref').value.trim(),
+    recebido: false,
+  });
+  document.getElementById('e-valor').value='';
+  document.getElementById('e-ref').value='';
+  document.getElementById('e-data').value='';
+  renderEntradasTemp();
+}
+
+function renderEntradasTemp() {
+  const el=document.getElementById('entradas-lista'); if(!el)return;
+  if(!entradasTemp.length){ el.innerHTML='<div style="text-align:center;padding:.75rem;font-size:13px;color:#888">Nenhuma parcela adicionada ainda.</div>'; return; }
+  el.innerHTML=entradasTemp.map((e,i)=>`
+    <div class="entrada-item">
+      <div style="flex:1">
+        <div style="font-size:14px;font-weight:500;color:#1a1a1a">${brl(e.valor)}</div>
+        <div style="font-size:12px;color:#888;margin-top:2px">${e.referencia?e.referencia+' · ':''}${e.forma_recebimento}${e.data_prevista?' · '+dtBR(e.data_prevista):''}</div>
+      </div>
+      <button class="btn-del" onclick="entradasTemp.splice(${i},1);renderEntradasTemp()"><i class="ti ti-trash" style="font-size:14px"></i></button>
+    </div>`).join('');
+}
+
+async function salvarEntradasObra(obraId) {
+  if(!entradasTemp.length) return;
+  const rows=entradasTemp.map(e=>({...e,obra_id:obraId}));
+  const {data}=await db.from('entradas').insert(rows).select();
+  if(data) entradas.push(...data);
+  entradasTemp=[];
+}
+
 // ── OBRAS ─────────────────────────────────────────────────
 async function salvarObra() {
   const nome=document.getElementById('o-nome').value.trim();
   const prop=document.getElementById('o-prop').value.trim();
-  if(!nome||!prop){alert('Preencha nome e proprietário.');return}
+  if(!nome||!prop){ alert('Preencha nome e proprietário.'); return; }
   setLoading(true);
   const obj={nome,proprietario:prop,local:document.getElementById('o-local').value.trim(),orcamento:parseFloat(document.getElementById('o-orc').value)||0,status:document.getElementById('o-status').value,inicio:document.getElementById('o-ini').value||null,fim:document.getElementById('o-fim').value||null,obs:document.getElementById('o-obs').value.trim()};
-  const obraIdParaEntradas = editObraId;
   if(editObraId){
     await atualizarObra(editObraId,obj);
     const i=obras.findIndex(o=>o.id===editObraId); if(i>-1)obras[i]={...obras[i],...obj};
   } else {
-    const nova=await inserirObra(obj); if(nova)obras.push(nova);
+    const nova=await inserirObra(obj);
+    if(nova){ obras.push(nova); await salvarEntradasObra(nova.id); }
   }
-  if (!obraIdParaEntradas && novo) await salvarEntradasObra(novo.id);
   setLoading(false); closeModal('m-obra'); popSelects();
-entradasTemp = [];
   renderDObras(); renderMObras();
-  if(isMobile())renderMDash(); else renderDDash();
 }
 function editObra(id) {
   const o=obras.find(x=>x.id===id); if(!o)return; editObraId=id;
@@ -263,14 +303,77 @@ function editObra(id) {
 async function delObra(id) {
   if(!confirm('Excluir esta obra?'))return;
   setLoading(true); await deletarObra(id); obras=obras.filter(o=>o.id!==id);
-  setLoading(false); popSelects();
-  if(isMobile())renderMObras(); else renderDObras();
+  entradas=entradas.filter(e=>e.obra_id!==id);
+  setLoading(false); popSelects(); renderDObras(); renderMObras();
+}
+
+// ── FINANCEIRO DA OBRA ────────────────────────────────────
+async function toggleEntrada(id, recebido) {
+  const novoStatus=!recebido;
+  const update={recebido:novoStatus, data_recebimento:novoStatus?hoje():null};
+  await atualizarEntrada(id,update);
+  const i=entradas.findIndex(e=>e.id===id); if(i>-1) entradas[i]={...entradas[i],...update};
+  const e=entradas[i]; if(e) renderFinanceiroCard(e.obra_id);
+}
+async function delEntrada(id) {
+  if(!confirm('Excluir esta parcela?'))return;
+  await deletarEntrada(id);
+  const e=entradas.find(x=>x.id===id);
+  const obraId=e?.obra_id;
+  entradas=entradas.filter(x=>x.id!==id);
+  if(obraId) renderFinanceiroCard(obraId);
+}
+async function addEntradaDireta(obraId) {
+  const valor=parseFloat(prompt('Valor da parcela (R$):'));
+  if(!valor||isNaN(valor)) return;
+  const ref=prompt('Referência (ex: 25% estrutura):') || '';
+  const data=prompt('Data prevista (DD/MM/AAAA):') || '';
+  const dataISO=data?data.split('/').reverse().join('-'):null;
+  const forma=prompt('Forma de recebimento (PIX / Boleto / Cheque / Transferência / Dinheiro):') || 'PIX';
+  const obj={obra_id:obraId,valor,referencia:ref,data_prevista:dataISO||null,forma_recebimento:forma,recebido:false};
+  const nova=await inserirEntrada(obj);
+  if(nova){ entradas.push(nova); renderFinanceiroCard(obraId); }
+}
+
+function renderFinanceiroCard(obraId) {
+  const el=document.getElementById('fin-'+obraId); if(!el)return;
+  const obraEntradas=entradas.filter(e=>e.obra_id===obraId).sort((a,b)=>(a.data_prevista||'').localeCompare(b.data_prevista||''));
+  const gastosList=gastos.filter(g=>g.obra_id===obraId);
+  const totalPrevisto=obraEntradas.reduce((a,e)=>a+(parseFloat(e.valor)||0),0);
+  const totalRecebido=obraEntradas.filter(e=>e.recebido).reduce((a,e)=>a+(parseFloat(e.valor)||0),0);
+  const totalGasto=tot(gastosList);
+  const saldo=totalRecebido-totalGasto;
+  const perc=totalPrevisto>0?Math.min(100,Math.round(totalRecebido/totalPrevisto*100)):0;
+
+  el.innerHTML=`
+    <div style="border-top:1px solid #e8e4de;margin-top:10px;padding-top:10px">
+      <div style="font-size:12px;font-weight:500;color:#8B4513;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Financeiro</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:8px;margin-bottom:10px">
+        <div style="background:#f5f4f1;border-radius:8px;padding:8px 10px"><div style="font-size:10px;color:#888;margin-bottom:2px">Previsto</div><div style="font-size:14px;font-weight:500">${brl(totalPrevisto)}</div></div>
+        <div style="background:#e8f2e8;border-radius:8px;padding:8px 10px"><div style="font-size:10px;color:#888;margin-bottom:2px">Recebido</div><div style="font-size:14px;font-weight:500;color:#2D6A2D">${brl(totalRecebido)}</div></div>
+        <div style="background:#f5ede6;border-radius:8px;padding:8px 10px"><div style="font-size:10px;color:#888;margin-bottom:2px">Gasto</div><div style="font-size:14px;font-weight:500;color:#8B4513">${brl(totalGasto)}</div></div>
+        <div style="background:${saldo>=0?'#e8f2e8':'#fceaea'};border-radius:8px;padding:8px 10px"><div style="font-size:10px;color:#888;margin-bottom:2px">Saldo</div><div style="font-size:14px;font-weight:500;color:${saldo>=0?'#2D6A2D':'#c0392b'}">${brl(saldo)}</div></div>
+      </div>
+      ${totalPrevisto>0?`<div style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span style="color:#888">Recebimentos</span><span style="color:#2D6A2D;font-weight:500">${perc}%</span></div><div style="background:#e0dbd4;border-radius:4px;height:6px;overflow:hidden"><div style="width:${perc}%;height:100%;background:#2D6A2D;border-radius:4px"></div></div></div>`:''}
+      ${obraEntradas.map(e=>`
+        <div class="entrada-item ${e.recebido?'recebido':''}" style="margin-bottom:6px">
+          <div class="entrada-check ${e.recebido?'ok':''}" onclick="toggleEntrada('${e.id}',${e.recebido})">
+            ${e.recebido?'<i class="ti ti-check" style="font-size:11px"></i>':''}
+          </div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:13px;font-weight:500;color:#1a1a1a">${brl(e.valor)}</div>
+            <div style="font-size:11px;color:#888;margin-top:1px">${e.referencia?e.referencia+' · ':''}${e.forma_recebimento||''}${e.data_prevista?' · '+dtBR(e.data_prevista):''}${e.recebido&&e.data_recebimento?' · recebido '+dtBR(e.data_recebimento):''}</div>
+          </div>
+          <button class="btn-del" onclick="delEntrada('${e.id}')"><i class="ti ti-trash" style="font-size:13px"></i></button>
+        </div>`).join('')}
+      <button class="btn-s" style="width:100%;font-size:12px;margin-top:4px" onclick="addEntradaDireta('${obraId}')"><i class="ti ti-plus" style="font-size:12px;vertical-align:-1px"></i> Adicionar parcela</button>
+    </div>`;
 }
 
 // ── FORNECEDORES ──────────────────────────────────────────
 async function salvarForn() {
   const nome=document.getElementById('f-nome').value.trim();
-  if(!nome){alert('Informe o nome.');return}
+  if(!nome){ alert('Informe o nome.'); return; }
   setLoading(true);
   const obj={nome,tipo:document.getElementById('f-tipo-c').value,telefone:document.getElementById('f-tel').value.trim(),obs:document.getElementById('f-obs').value.trim()};
   if(editFornId){
@@ -294,8 +397,7 @@ function editForn(id) {
 async function delForn(id) {
   if(!confirm('Excluir fornecedor?'))return;
   setLoading(true); await deletarForn(id); forns=forns.filter(f=>f.id!==id);
-  setLoading(false);
-  if(isMobile())renderMForns(); else renderDForns();
+  setLoading(false); if(isMobile())renderMForns(); else renderDForns();
 }
 
 // ── GASTOS ────────────────────────────────────────────────
@@ -304,7 +406,7 @@ async function salvarGasto() {
   const categoria=document.getElementById('g-cat').value;
   const valor=parseFloat(document.getElementById('g-valor').value);
   const data=document.getElementById('g-data').value;
-  if(!obra_id||!categoria||!valor||!data){alert('Preencha obra, categoria, valor e data.');return}
+  if(!obra_id||!categoria||!valor||!data){ alert('Preencha obra, categoria, valor e data.'); return; }
   const fn=document.getElementById('g-forn').value.trim();
   if(fn&&!forns.find(f=>f.nome.toLowerCase()===fn.toLowerCase())){
     const nf=await inserirForn({nome:fn,tipo:categoria,telefone:'',obs:''}); if(nf)forns.push(nf);
@@ -318,18 +420,17 @@ async function salvarGasto() {
 async function delGasto(id) {
   if(!confirm('Excluir lançamento?'))return;
   setLoading(true); await deletarGasto(id); gastos=gastos.filter(g=>g.id!==id);
-  setLoading(false);
-  if(isMobile())renderMGastos(); else renderDGastos();
+  setLoading(false); if(isMobile())renderMGastos(); else renderDGastos();
 }
 
 // ── RENDER HELPERS ────────────────────────────────────────
 function giHTML(g,om) {
-  const cor=CAT_COR[g.categoria]||'#888', ic=CAT_IC[g.categoria]||'ti-tag', on=om?om[g.obra_id]||'':'';
+  const cor=CAT_COR[g.categoria]||'#888',ic=CAT_IC[g.categoria]||'ti-tag',on=om?om[g.obra_id]||'':'';
   const nfb=g.nf?`<span class="nf-badge"><i class="ti ti-file-text"></i>${g.nf}</span>`:'';
   return`<div class="gi"><div class="gi-left"><div class="gi-icon" style="background:${cor}18"><i class="ti ${ic}" style="color:${cor};font-size:16px"></i></div><div><div class="gi-title">${g.categoria}${nfb}</div><div class="gi-meta">${g.fornecedor?g.fornecedor+' · ':''}${on}${g.forma_pagamento?' · '+g.forma_pagamento:''}</div>${g.descricao?`<div class="gi-meta">${g.descricao}</div>`:''}</div></div><div><div class="gi-val">${brl(g.valor)}</div><div class="gi-date">${dtBR(g.data)}</div><div style="text-align:right;margin-top:4px"><button class="btn-del" onclick="delGasto('${g.id}')"><i class="ti ti-trash" style="font-size:14px"></i></button></div></div></div>`;
 }
 function mGiHTML(g,om) {
-  const cor=CAT_COR[g.categoria]||'#888', ic=CAT_IC[g.categoria]||'ti-tag', on=om?om[g.obra_id]||'':'';
+  const cor=CAT_COR[g.categoria]||'#888',ic=CAT_IC[g.categoria]||'ti-tag',on=om?om[g.obra_id]||'':'';
   return`<div class="mob-gi"><div class="mob-gi-top"><div class="mob-gi-cat"><div class="mob-gi-icon" style="background:${cor}18"><i class="ti ${ic}" style="color:${cor};font-size:15px"></i></div><span class="mob-gi-title">${g.categoria}</span></div><div style="display:flex;align-items:center;gap:8px"><div class="mob-gi-val">${brl(g.valor)}</div><button class="btn-del" onclick="delGasto('${g.id}')"><i class="ti ti-trash" style="font-size:14px"></i></button></div></div><div class="mob-gi-meta">${g.fornecedor?g.fornecedor+' · ':''}${on} · ${dtBR(g.data)}</div></div>`;
 }
 function relMetrics(t,tmo,tmat,extra='') { return`<div class="metrics" style="margin-bottom:1rem"><div class="metric"><div class="metric-label">Total gasto</div><div class="metric-value mv-brown">${brl(t)}</div></div><div class="metric"><div class="metric-label">Mão de obra</div><div class="metric-value mv-green">${brl(tmo)}</div></div><div class="metric"><div class="metric-label">Materiais</div><div class="metric-value">${brl(tmat)}</div></div>${extra}</div>`; }
@@ -353,8 +454,17 @@ function renderDObras() {
   if(!obras.length){el.innerHTML='<div class="empty"><i class="ti ti-building-off"></i>Nenhuma obra cadastrada.</div>';return}
   el.innerHTML=obras.map(o=>{
     const go=gastos.filter(g=>g.obra_id===o.id),gt=tot(go),perc=o.orcamento>0?Math.min(100,Math.round(gt/o.orcamento*100)):0;
-    return`<div class="card" style="margin-bottom:10px;padding:.875rem 1.25rem"><div class="card-hdr"><div><div style="font-size:15px;font-weight:500">${o.nome}</div><div style="font-size:13px;color:#888;margin-top:2px">${o.proprietario||''}${o.local?' · '+o.local:''}</div></div><div style="display:flex;gap:6px;align-items:center"><span class="badge ${ST_B[o.status]||'b-gray'}">${o.status}</span><button class="btn-ic" onclick="editObra('${o.id}')"><i class="ti ti-pencil"></i></button><button class="btn-ic" onclick="delObra('${o.id}')"><i class="ti ti-trash" style="color:#c0392b"></i></button></div></div><div style="display:flex;gap:20px;font-size:13px;flex-wrap:wrap"><span style="color:#888">Gasto: <strong style="color:#1a1a1a">${brl(gt)}</strong></span>${o.orcamento?`<span style="color:#888">Orç.: <strong>${brl(o.orcamento)}</strong></span><span style="color:#888">${perc}% utilizado</span>`:''}<span style="color:#888">${go.length} lançamentos</span></div>${o.orcamento?`<div class="bar-bg"><div class="bar-fill" style="width:${perc}%;background:${perc>90?'#c0392b':'#8B4513'}"></div></div>`:''}</div><div id="fin-${o.id}" style="margin-top:10px"></div>`;
+    return`<div class="card" style="margin-bottom:10px;padding:.875rem 1.25rem">
+      <div class="card-hdr">
+        <div><div style="font-size:15px;font-weight:500">${o.nome}</div><div style="font-size:13px;color:#888;margin-top:2px">${o.proprietario||''}${o.local?' · '+o.local:''}</div></div>
+        <div style="display:flex;gap:6px;align-items:center"><span class="badge ${ST_B[o.status]||'b-gray'}">${o.status}</span><button class="btn-ic" onclick="editObra('${o.id}')"><i class="ti ti-pencil"></i></button><button class="btn-ic" onclick="delObra('${o.id}')"><i class="ti ti-trash" style="color:#c0392b"></i></button></div>
+      </div>
+      <div style="display:flex;gap:20px;font-size:13px;flex-wrap:wrap"><span style="color:#888">Gasto: <strong style="color:#1a1a1a">${brl(gt)}</strong></span>${o.orcamento?`<span style="color:#888">Orç.: <strong>${brl(o.orcamento)}</strong></span><span style="color:#888">${perc}% utilizado</span>`:''}<span style="color:#888">${go.length} lançamentos</span></div>
+      ${o.orcamento?`<div class="bar-bg"><div class="bar-fill" style="width:${perc}%;background:${perc>90?'#c0392b':'#8B4513'}"></div></div>`:''}
+      <div id="fin-${o.id}"></div>
+    </div>`;
   }).join('');
+  obras.forEach(o=>renderFinanceiroCard(o.id));
 }
 function renderDGastos() {
   const of=document.getElementById('d-f-obra').value,cf=document.getElementById('d-f-cat').value,tf=document.getElementById('d-f-tipo').value,mf=document.getElementById('d-f-mes').value,om=oMap();
@@ -365,7 +475,7 @@ function renderDGastos() {
   if(tf==='mo')list=list.filter(g=>g.categoria==='Mão de obra');
   if(mf)list=list.filter(g=>g.data&&g.data.startsWith(mf));
   const el=document.getElementById('d-gastos-list');
-  el.innerHTML=list.length?list.map(g=>giHTML(g,om)).join(''):'<div class="empty"><i class="ti ti-receipt-off"></i>Nenhum lançamento.</div>obras.forEach(o => renderFinanceiroObra(o.id));';
+  el.innerHTML=list.length?list.map(g=>giHTML(g,om)).join(''):'<div class="empty"><i class="ti ti-receipt-off"></i>Nenhum lançamento.</div>';
   document.getElementById('d-gastos-total').textContent=list.length?`Total filtrado: ${brl(tot(list))} (${list.length} lançamentos)`:'';
 }
 function renderDForns() {
@@ -388,7 +498,8 @@ function renderMDash() {
 function renderMObras() {
   const el=document.getElementById('m-obras-list');
   if(!obras.length){el.innerHTML=`<div class="empty"><i class="ti ti-building-off"></i>Nenhuma obra.<br><br><button class="mob-btn-p" style="max-width:200px;margin:0 auto" onclick="openModal('m-obra')">+ Nova obra</button></div>`;return}
-  el.innerHTML=obras.map(o=>{const go=gastos.filter(g=>g.obra_id===o.id),gt=tot(go),perc=o.orcamento>0?Math.min(100,Math.round(gt/o.orcamento*100)):0;return`<div class="mob-obra-card"><div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:6px"><div><div class="mob-obra-name">${o.nome}</div><div class="mob-obra-sub">${o.proprietario||''}${o.local?' · '+o.local:''}</div></div><div style="display:flex;gap:6px;align-items:center"><span class="badge ${ST_B[o.status]||'b-gray'}">${o.status}</span><button class="btn-del" onclick="editObra('${o.id}')"><i class="ti ti-pencil" style="font-size:16px;color:#888"></i></button></div></div><div style="display:flex;gap:16px;font-size:13px;flex-wrap:wrap;margin-bottom:6px"><span style="color:#888">Gasto: <strong style="color:#1a1a1a">${brl(gt)}</strong></span>${o.orcamento?`<span style="color:#888">${perc}% do orç.</span>`:''}<span style="color:#888">${go.length} lanç.</span></div>${o.orcamento?`<div class="bar-bg"><div class="bar-fill" style="width:${perc}%;background:${perc>90?'#c0392b':'#8B4513'}"></div></div>`:''}</div>`}).join('')+`<div style="margin-top:12px"><button class="mob-btn-p" onclick="openModal('m-obra')"><i class="ti ti-plus"></i> Nova obra</button></div>`;
+  el.innerHTML=obras.map(o=>{const go=gastos.filter(g=>g.obra_id===o.id),gt=tot(go),perc=o.orcamento>0?Math.min(100,Math.round(gt/o.orcamento*100)):0;return`<div class="mob-obra-card"><div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:6px"><div><div class="mob-obra-name">${o.nome}</div><div class="mob-obra-sub">${o.proprietario||''}${o.local?' · '+o.local:''}</div></div><div style="display:flex;gap:6px;align-items:center"><span class="badge ${ST_B[o.status]||'b-gray'}">${o.status}</span><button class="btn-del" onclick="editObra('${o.id}')"><i class="ti ti-pencil" style="font-size:16px;color:#888"></i></button></div></div><div style="display:flex;gap:16px;font-size:13px;flex-wrap:wrap;margin-bottom:6px"><span style="color:#888">Gasto: <strong style="color:#1a1a1a">${brl(gt)}</strong></span>${o.orcamento?`<span style="color:#888">${perc}% do orç.</span>`:''}<span style="color:#888">${go.length} lanç.</span></div>${o.orcamento?`<div class="bar-bg"><div class="bar-fill" style="width:${perc}%;background:${perc>90?'#c0392b':'#8B4513'}"></div></div>`:''}<div id="fin-${o.id}"></div></div>`}).join('')+`<div style="margin-top:12px"><button class="mob-btn-p" onclick="openModal('m-obra')"><i class="ti ti-plus"></i> Nova obra</button></div>`;
+  obras.forEach(o=>renderFinanceiroCard(o.id));
 }
 function renderMGastos() {
   const of=mFiltros.obra,om=oMap();
@@ -455,123 +566,6 @@ function exportCSV(obraId) {
   const obra=obras.find(o=>o.id===obraId),list=gastos.filter(g=>g.obra_id===obraId);
   if(!list.length){alert('Sem gastos para exportar.');return}
   const rows=[['Data','Categoria','Fornecedor','Valor','Pagamento','NF','Descrição'],...list.map(g=>[g.data,g.categoria,g.fornecedor||'',parseFloat(g.valor).toFixed(2).replace('.',','),g.forma_pagamento||'',g.nf||'',(g.descricao||'').replace(/,/g,' ')])];
-  let entradasTemp = [];
-
-function obraTab(tab) {
-  document.querySelectorAll('.obra-tab').forEach(b => b.classList.remove('active'));
-  document.querySelector(`.obra-tab[onclick="obraTab('${tab}')"]`).classList.add('active');
-  document.getElementById('ot-dados').style.display = tab === 'dados' ? 'block' : 'none';
-  document.getElementById('ot-financeiro').style.display = tab === 'financeiro' ? 'block' : 'none';
-  if (tab === 'financeiro') renderEntradasTemp();
-}
-
-function addEntradaTemp() {
-  const valor = parseFloat(document.getElementById('e-valor').value);
-  if (!valor) { alert('Informe o valor da parcela.'); return; }
-  entradasTemp.push({
-    valor,
-    data_prevista: document.getElementById('e-data').value || null,
-    forma_recebimento: document.getElementById('e-forma').value,
-    referencia: document.getElementById('e-ref').value.trim(),
-    recebido: false,
-  });
-  document.getElementById('e-valor').value = '';
-  document.getElementById('e-ref').value = '';
-  renderEntradasTemp();
-}
-
-function renderEntradasTemp() {
-  const el = document.getElementById('entradas-lista');
-  if (!entradasTemp.length) { el.innerHTML = '<div style="text-align:center;padding:1rem;font-size:13px;color:#888">Nenhuma parcela adicionada ainda.</div>'; return; }
-  el.innerHTML = entradasTemp.map((e, i) => `
-    <div class="entrada-item">
-      <div style="flex:1">
-        <div style="font-size:14px;font-weight:500;color:#1a1a1a">${brl(e.valor)}</div>
-        <div style="font-size:12px;color:#888;margin-top:2px">${e.referencia ? e.referencia + ' · ' : ''}${e.forma_recebimento}${e.data_prevista ? ' · ' + dtBR(e.data_prevista) : ''}</div>
-      </div>
-      <button class="btn-del" onclick="entradasTemp.splice(${i},1);renderEntradasTemp()"><i class="ti ti-trash" style="font-size:14px"></i></button>
-    </div>`).join('');
-}
-
-async function carregarEntradas(obraId) {
-  const { data } = await db.from('entradas').select('*').eq('obra_id', obraId).order('data_prevista');
-  return data || [];
-}
-
-async function salvarEntradasObra(obraId) {
-  if (!entradasTemp.length) return;
-  const rows = entradasTemp.map(e => ({ ...e, obra_id: obraId }));
-  await db.from('entradas').insert(rows);
-  entradasTemp = [];
-}
-
-async function toggleEntrada(id, recebido) {
-  const novoStatus = !recebido;
-  const update = { recebido: novoStatus, data_recebimento: novoStatus ? hoje() : null };
-  await db.from('entradas').update(update).eq('id', id);
-  if (currentObraFinanceiroId) renderFinanceiroObra(currentObraFinanceiroId);
-}
-
-async function delEntrada(id) {
-  if (!confirm('Excluir esta parcela?')) return;
-  await db.from('entradas').delete().eq('id', id);
-  if (currentObraFinanceiroId) renderFinanceiroObra(currentObraFinanceiroId);
-}
-
-let currentObraFinanceiroId = null;
-
-async function renderFinanceiroObra(obraId) {
-  currentObraFinanceiroId = obraId;
-  const obra = obras.find(o => o.id === obraId);
-  const entradas = await carregarEntradas(obraId);
-  const gastosList = gastos.filter(g => g.obra_id === obraId);
-  const totalPrevisto = entradas.reduce((a, e) => a + parseFloat(e.valor || 0), 0);
-  const totalRecebido = entradas.filter(e => e.recebido).reduce((a, e) => a + parseFloat(e.valor || 0), 0);
-  const totalGasto = tot(gastosList);
-  const saldo = totalRecebido - totalGasto;
-  const percRecebido = totalPrevisto > 0 ? Math.min(100, Math.round(totalRecebido / totalPrevisto * 100)) : 0;
-
-  const el = document.getElementById('fin-' + obraId);
-  if (!el) return;
-
-  el.innerHTML = `
-    <div class="metrics" style="margin-bottom:1rem">
-      <div class="metric"><div class="metric-label">Total previsto</div><div class="metric-value">${brl(totalPrevisto)}</div></div>
-      <div class="metric"><div class="metric-label">Recebido</div><div class="metric-value mv-green">${brl(totalRecebido)}</div></div>
-      <div class="metric"><div class="metric-label">Gasto</div><div class="metric-value mv-brown">${brl(totalGasto)}</div></div>
-      <div class="metric"><div class="metric-label">Saldo</div><div class="metric-value ${saldo >= 0 ? 'mv-green' : 'mv-red'}">${brl(saldo)}</div></div>
-    </div>
-    <div style="margin-bottom:14px">
-      <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px"><span style="font-weight:500">Progresso de recebimentos</span><span style="color:#888">${percRecebido}%</span></div>
-      <div class="pb-bg"><div class="pb-fill" style="width:${percRecebido}%;background:#2D6A2D"></div></div>
-    </div>
-    <div style="font-size:13px;font-weight:500;color:#888;margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">Parcelas</div>
-    ${entradas.length ? entradas.map(e => `
-      <div class="entrada-item ${e.recebido ? 'recebido' : ''}">
-        <div class="entrada-check ${e.recebido ? 'ok' : ''}" onclick="toggleEntrada('${e.id}',${e.recebido})">
-          ${e.recebido ? '<i class="ti ti-check" style="font-size:12px"></i>' : ''}
-        </div>
-        <div style="flex:1">
-          <div style="font-size:14px;font-weight:500;color:#1a1a1a">${brl(e.valor)}</div>
-          <div style="font-size:12px;color:#888;margin-top:1px">${e.referencia ? e.referencia + ' · ' : ''}${e.forma_recebimento || ''}${e.data_prevista ? ' · ' + dtBR(e.data_prevista) : ''}${e.recebido && e.data_recebimento ? ' · recebido em ' + dtBR(e.data_recebimento) : ''}</div>
-        </div>
-        <button class="btn-del" onclick="delEntrada('${e.id}')"><i class="ti ti-trash" style="font-size:14px"></i></button>
-      </div>`).join('') : '<div style="text-align:center;padding:1rem;font-size:13px;color:#888">Nenhuma parcela cadastrada.</div>'}
-    <div style="margin-top:10px">
-      <button class="btn-s" style="width:100%;font-size:13px" onclick="abrirAddEntrada('${obraId}')"><i class="ti ti-plus" style="font-size:13px;vertical-align:-1px"></i> Adicionar parcela</button>
-    </div>
-  `;
-}
-
-async function abrirAddEntrada(obraId) {
-  const valor = prompt('Valor da parcela (R$):');
-  if (!valor || isNaN(parseFloat(valor))) return;
-  const ref = prompt('Referência (ex: 25% estrutura):') || '';
-  const data = prompt('Data prevista (AAAA-MM-DD):') || null;
-  const forma = prompt('Forma (PIX / Boleto / Cheque / Transferência / Dinheiro):') || 'PIX';
-  await db.from('entradas').insert([{ obra_id: obraId, valor: parseFloat(valor), referencia: ref, data_prevista: data, forma_recebimento: forma, recebido: false }]);
-  renderFinanceiroObra(obraId);
-}
   const blob=new Blob(['\uFEFF'+rows.map(r=>r.join(',')).join('\n')],{type:'text/csv;charset=utf-8'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=(obra?obra.nome:'obra')+'_gastos.csv';a.click();
 }
