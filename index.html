@@ -52,7 +52,7 @@
     </nav>
 
     <div id="d-dashboard" class="sec active">
-      <div id="d-dash-metrics" class="metrics"></div>
+      <div id="d-dash-alerta"></div><div id="d-dash-metrics" class="metrics"></div>
       <div class="card"><div class="card-title">Gastos por categoria</div><div class="chart-wrap" style="height:200px"><canvas id="d-chartCat"></canvas></div></div>
       <div class="card"><div class="card-title">Gasto por obra</div><div class="chart-wrap" style="height:200px"><canvas id="d-chartObra"></canvas></div></div>
       <div class="card"><div class="card-title">Últimos lançamentos</div><div id="d-recentes"></div></div>
@@ -86,11 +86,20 @@
         <button class="stab" onclick="dShowStab('dr-forn')">Por fornecedor</button>
         <button class="stab" onclick="dShowStab('dr-per')">Por período</button>
         <button class="stab" onclick="dShowStab('dr-mo')">MO vs Materiais</button>
+      <button class="stab" onclick="dShowStab('dr-parcelas')">Parcelas</button>
       </div>
       <div id="dr-obra" class="ssec"><div class="ffull"><label>Selecionar obra</label><select id="d-rel-obra" onchange="renderRelObra()"><option value="">Selecione...</option></select></div><div id="d-rel-obra-c"></div></div>
       <div id="dr-forn" class="ssec"><div class="frow"><div><label>Fornecedor</label><select id="d-rel-forn" onchange="renderRelForn()"><option value="">Todos</option></select></div><div><label>Obra</label><select id="d-rel-forn-obra" onchange="renderRelForn()"><option value="">Todas</option></select></div></div><div id="d-rel-forn-c"></div></div>
       <div id="dr-per" class="ssec"><div class="frow"><div><label>Mês</label><select id="d-rel-mes" onchange="renderRelPer()"><option value="">Todos</option></select></div><div><label>Obra</label><select id="d-rel-per-obra" onchange="renderRelPer()"><option value="">Todas</option></select></div></div><div id="d-rel-per-c"></div></div>
-      <div id="dr-mo" class="ssec"><div class="ffull"><label>Obra</label><select id="d-rel-mo-obra" onchange="renderRelMO()"><option value="">Todas as obras</option></select></div><div id="d-rel-mo-c"></div></div>
+      <div id="dr-parcelas" class="ssec">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1rem">
+        <div style="flex:1;min-width:120px"><label>Obra</label><select id="d-rel-parc-obra" onchange="renderRelParcelas()"><option value="">Todas</option></select></div>
+        <div style="flex:1;min-width:120px"><label>Período</label><select id="d-rel-parc-per" onchange="renderRelParcelas()"><option value="todos">Todos</option><option value="hoje">Hoje</option><option value="semana">Próximos 7 dias</option><option value="mes">Este mês</option><option value="vencidas">Vencidas</option></select></div>
+        <div style="flex:1;min-width:120px"><label>Status</label><select id="d-rel-parc-status" onchange="renderRelParcelas()"><option value="todos">Todos</option><option value="pendente">Pendentes</option><option value="recebido">Recebidos</option><option value="vencida">Vencidas</option></select></div>
+      </div>
+      <div id="d-rel-parc-c"></div>
+    </div>
+    <div id="dr-mo" class="ssec"><div class="ffull"><label>Obra</label><select id="d-rel-mo-obra" onchange="renderRelMO()"><option value="">Todas as obras</option></select></div><div id="d-rel-mo-c"></div></div>
     </div>
   </div>
 
@@ -103,7 +112,7 @@
     </div>
     <div class="mob-content">
       <div id="m-dashboard" class="mob-sec active">
-        <div id="m-dash-metrics" class="mob-metric-row"></div>
+        <div id="m-dash-alerta"></div><div id="m-dash-metrics" class="mob-metric-row"></div>
         <div class="card"><div class="card-title">Categorias</div><div class="chart-wrap" style="height:180px"><canvas id="m-chartCat"></canvas></div></div>
         <div class="card"><div class="card-title">Por obra</div><div class="chart-wrap" style="height:180px"><canvas id="m-chartObra"></canvas></div></div>
         <div class="card"><div class="card-title">Últimos lançamentos</div><div id="m-recentes"></div></div>
@@ -121,11 +130,17 @@
           <span class="mob-chip" onclick="mShowRel('mr-forn',this)">Fornecedor</span>
           <span class="mob-chip" onclick="mShowRel('mr-per',this)">Período</span>
           <span class="mob-chip" onclick="mShowRel('mr-mo',this)">MO vs Mat.</span>
+        <span class="mob-chip" onclick="mShowRel('mr-parcelas',this)">Parcelas</span>
         </div>
         <div id="mr-obra"><div class="mob-field"><label>Obra</label><select id="m-rel-obra" onchange="renderMRelObra()"><option value="">Selecione...</option></select></div><div id="m-rel-obra-c"></div></div>
         <div id="mr-forn" style="display:none"><div class="mob-field"><label>Fornecedor</label><select id="m-rel-forn" onchange="renderMRelForn()"><option value="">Todos</option></select></div><div id="m-rel-forn-c"></div></div>
         <div id="mr-per" style="display:none"><div class="mob-field"><label>Mês</label><select id="m-rel-mes" onchange="renderMRelPer()"><option value="">Todos</option></select></div><div id="m-rel-per-c"></div></div>
-        <div id="mr-mo" style="display:none"><div class="mob-field"><label>Obra</label><select id="m-rel-mo-obra" onchange="renderMRelMO()"><option value="">Todas</option></select></div><div id="m-rel-mo-c"></div></div>
+        <div id="mr-parcelas" style="display:none">
+        <div class="mob-field"><label>Período</label><select id="m-rel-parc-per" onchange="renderRelParcelas('m-')"><option value="todos">Todos</option><option value="hoje">Hoje</option><option value="semana">Próximos 7 dias</option><option value="mes">Este mês</option><option value="vencidas">Vencidas</option></select></div>
+        <div class="mob-field"><label>Status</label><select id="m-rel-parc-status" onchange="renderRelParcelas('m-')"><option value="todos">Todos</option><option value="pendente">Pendentes</option><option value="recebido">Recebidos</option><option value="vencida">Vencidas</option></select></div>
+        <div id="m-rel-parc-c"></div>
+      </div>
+      <div id="mr-mo" style="display:none"><div class="mob-field"><label>Obra</label><select id="m-rel-mo-obra" onchange="renderMRelMO()"><option value="">Todas</option></select></div><div id="m-rel-mo-c"></div></div>
       </div>
     </div>
     <button class="mob-fab" onclick="openModal('m-gasto')"><i class="ti ti-plus"></i></button>
@@ -150,7 +165,7 @@
     </div>
     <div class="obra-tabs">
       <button class="obra-tab active" data-tab="dados" onclick="obraTab('dados')">Dados da obra</button>
-      <button class="obra-tab" data-tab="financeiro" onclick="obraTab('financeiro')">Financeiro</button>
+      <button class="obra-tab" data-tab="financeiro" onclick="obraTab('financeiro')">Financeiro do Contrato</button>
     </div>
     <div id="ot-dados">
       <div class="mob-field"><label>Nome da obra *</label><input id="o-nome" type="text" placeholder="Ex: Residencial dos Santos"></div>
@@ -172,23 +187,10 @@
       <div class="mob-field"><label>Observações</label><textarea id="o-obs" placeholder="Detalhes..."></textarea></div>
     </div>
     <div id="ot-financeiro" style="display:none">
-      <div id="entradas-lista" style="margin-bottom:12px"></div>
-      <div style="background:#f5f4f1;border-radius:10px;padding:12px;margin-bottom:12px">
-        <div style="font-size:13px;font-weight:500;color:#8B4513;margin-bottom:10px">+ Nova parcela</div>
-        <div class="frow">
-          <div class="mob-field" style="margin-bottom:0"><label>Valor (R$) *</label><input id="e-valor" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0,00"></div>
-          <div class="mob-field" style="margin-bottom:0"><label>Data prevista</label><input id="e-data" type="date"></div>
-        </div>
-        <div style="margin-bottom:10px"></div>
-        <div class="frow">
-          <div class="mob-field" style="margin-bottom:0"><label>Forma</label><select id="e-forma"><option>PIX</option><option>Boleto</option><option>Cheque</option><option>Transferência</option><option>Dinheiro</option></select></div>
-          <div class="mob-field" style="margin-bottom:0"><label>Referência</label><input id="e-ref" type="text" placeholder="Ex: 25% estrutura"></div>
-        </div>
-        <div style="margin-bottom:10px"></div>
-        <button class="mob-btn-p" style="margin-bottom:0" onclick="addEntradaTemp()"><i class="ti ti-plus"></i> Adicionar parcela</button>
-      </div>
+      <div id="fin-modal-lista" style="margin-bottom:12px"></div>
+      <button class="mob-btn-p" style="margin-bottom:0" onclick="abrirNovaEntrada(editObraId||document.getElementById('g-obra')?.value)"><i class="ti ti-plus"></i> Nova parcela</button>
     </div>
-    <button class="mob-btn-p" onclick="salvarObra()"><i class="ti ti-check"></i> Salvar obra</button>
+    <button class="mob-btn-p" onclick="salvarObra()" style="margin-top:14px"><i class="ti ti-check"></i> Salvar obra</button>
     <button class="mob-btn-s" onclick="closeModal('m-obra')">Cancelar</button>
   </div>
 </div>
@@ -252,5 +254,35 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script src="config.js"></script>
 <script src="app.js"></script>
+
+<!-- MODAL PARCELA -->
+<div id="m-entrada" class="mob-modal-bg" role="dialog" aria-modal="true">
+  <div class="mob-modal">
+    <div class="mob-modal-pill"></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+      <div class="mob-modal-title" id="m-entrada-title">Nova parcela</div>
+      <button class="btn-del" onclick="closeModal('m-entrada')"><i class="ti ti-x" style="font-size:18px"></i></button>
+    </div>
+    <input type="hidden" id="en-obra-id">
+    <div class="frow">
+      <div class="mob-field" style="margin-bottom:0"><label>Nº da parcela</label><input id="en-num" type="number" min="1" placeholder="1"></div>
+      <div class="mob-field" style="margin-bottom:0"><label>Valor previsto (R$) *</label><input id="en-val-prev" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0,00"></div>
+    </div>
+    <div style="margin-bottom:10px"></div>
+    <div class="mob-field"><label>Data prevista de recebimento</label><input id="en-data-prev" type="date"></div>
+    <div style="border-top:1px solid #e8e4de;margin:12px 0;padding-top:12px">
+      <div style="font-size:12px;font-weight:600;color:#2D6A2D;margin-bottom:10px">RECEBIMENTO</div>
+      <div class="frow">
+        <div class="mob-field" style="margin-bottom:0"><label>Valor recebido (R$)</label><input id="en-val-rec" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0,00"></div>
+        <div class="mob-field" style="margin-bottom:0"><label>Data de recebimento</label><input id="en-data-rec" type="date"></div>
+      </div>
+      <div style="margin-bottom:10px"></div>
+      <div class="mob-field"><label>Forma de recebimento</label><select id="en-forma"><option>PIX</option><option>Transferência</option><option>Boleto</option><option>Cheque</option><option>Dinheiro</option></select></div>
+    </div>
+    <div class="mob-field"><label>Observação</label><textarea id="en-obs" placeholder="Ex: Referente a 25% da estrutura..."></textarea></div>
+    <button class="mob-btn-p" onclick="salvarEntrada()"><i class="ti ti-check"></i> Salvar parcela</button>
+    <button class="mob-btn-s" onclick="closeModal('m-entrada')">Cancelar</button>
+  </div>
+</div>
 </body>
 </html>
