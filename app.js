@@ -317,9 +317,13 @@ async function salvarEntrada(){
   }else{
     const nova=await inserirEntrada(obj);if(nova)entradas.push(nova);
   }
-  setLoading(false);closeModal('m-entrada');
+  setLoading(false);
+  closeModal('m-entrada');
+  await carregarEntradas();
   renderFinanceiroCard(obraId);
-  if(editObraId===obraId)renderEntradasModal(obraId);
+  renderDObras();
+  renderMObras();
+  if(editObraId)renderEntradasModal(editObraId);
 }
 async function delEntrada(id){
   if(!confirm('Excluir esta parcela?'))return;
